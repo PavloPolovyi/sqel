@@ -4,7 +4,6 @@ use crate::cli::output::OutputFormat;
 use crate::cli::connection::{AddConnectionArgs, DriverSubcommand, AuthMethod, AuthSubcommand, ListArgs, NetworkConnectionArgs, DatabaseUrl};
 use crate::cli::console::{Console};
 use crate::domain::{AuthMode, CellValue, ConnectionKind, ConnectionName, DriverType};
-use std::borrow::Cow;
 use crate::cli::output::OutputWriter;
 
 pub fn handle_add(console: &Console, app: &ConnectionService, args: AddConnectionArgs) -> anyhow::Result<()> {
@@ -167,12 +166,12 @@ pub fn handle_list(app: &ConnectionService, args: &ListArgs) -> anyhow::Result<(
             let is_default = default_name == Some(c.name().as_str());
             let marker = if is_default { "*" } else { "" };
 
-            let user: Cow<'_, str> = match c.kind() {
+            let user: String = match c.kind() {
                 ConnectionKind::Network { user, .. } => user.as_str().into(),
                 ConnectionKind::Sqlite { .. } => "-".into(),
             };
 
-            let auth: Cow<'_, str> = match c.auth() {
+            let auth: String = match c.auth() {
                 AuthMode::None => "none".into(),
                 AuthMode::Password => format!("password ({})", c.credential_storage()).into(), // owned
             };

@@ -66,6 +66,16 @@ pub enum ConnectionKind {
     },
 }
 
+impl ConnectionKind {
+    pub fn as_network(&self) -> Option<(&str, u16, &str, &str)> {
+        match &self {
+            ConnectionKind::Network { host, port, db, user } =>
+                Some((host, *port, db, user)),
+            _ => None
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Connection {
     name: ConnectionName,

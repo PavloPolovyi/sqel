@@ -33,7 +33,7 @@ pub trait CellDisplay {
     fn to_json_value(&self) -> serde_json::Value;
 }
 
-impl CellDisplay for CellValue<'_> {
+impl CellDisplay for CellValue {
     fn to_string_value(&self) -> String {
         match &self {
             CellValue::Null => "NULL".to_string(),

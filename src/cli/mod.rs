@@ -12,7 +12,7 @@ use crate::infra::{FsConfigStore, KeychainSecretStore};
 
 pub async fn run(cli: Cli) -> anyhow::Result<()> {
     let console = Console::new();
-    let secret_store = KeychainSecretStore::new("dbcli".to_string());
+    let secret_store = KeychainSecretStore::new("sqlz".to_string());
     let config_store = FsConfigStore::new_default()?;
     let conn_app = ConnectionService::new(Box::new(secret_store), Box::new(config_store));
 
