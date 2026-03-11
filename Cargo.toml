@@ -2,6 +2,7 @@
 name = "sqel"
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
 description = "Universal database CLI for connecting, querying, exporting, and syncing across multiple database engines."
 authors = ["Pavlo Polovyi <pasha32662@gmail.com>"]
 
