@@ -6,7 +6,7 @@ use crate::cli::connection::ConnectionCommand;
     author,
     version,
     about,
-    long_about = "sqlz is a cross-engine database command-line tool.\n\
+    long_about = "sqel is a cross-engine database command-line tool.\n\
 It allows you to create named connections, run queries, export data, and \
 perform cross-database diff and copy operations across Postgres, MySQL, \
 SQLite, Snowflake, and more."

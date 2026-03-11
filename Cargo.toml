@@ -1,5 +1,5 @@
 [package]
-name = "sqlz"
+name = "sqel"
 version = "0.1.0"
 edition = "2024"
 description = "Universal database CLI for connecting, querying, exporting, and syncing across multiple database engines."

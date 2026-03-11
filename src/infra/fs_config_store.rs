@@ -62,7 +62,7 @@ impl ConfigStore for FsConfigStore {
 }
 
 fn default_config_path() -> anyhow::Result<PathBuf> {
-    let proj = ProjectDirs::from("com", "sqlz", "sqlz")
+    let proj = ProjectDirs::from("com", "sqel", "sqel")
         .context("Could not determine config directory")?;
     Ok(proj.config_dir().join("config.toml"))
 }
