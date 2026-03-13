@@ -1,13 +1,9 @@
-use futures::{stream, StreamExt};
-use sqlx::{TypeInfo};
-use sqlx::{Column, Connection, PgConnection, Row};
 use sqlx::postgres::{PgConnectOptions, PgRow};
-use sqlx::{ValueRef};
-use crate::domain::{CellValue, Connection as Conn, DatabaseError, QueryResult};
-use crate::ports::Driver;
+use sqlx::{Column, Connection, PgConnection, Row, TypeInfo, ValueRef};
+use crate::domain::{CellValue, Connection as Conn, DatabaseError};
 
 pub struct PostgresDriver {
-    connection: PgConnection
+    connection: PgConnection,
 }
 
 impl PostgresDriver {
@@ -22,44 +18,7 @@ impl PostgresDriver {
             .database(db)
             .password(password)
             .options(connection.params());
-        Ok(Self {connection: PgConnection::connect_with(&options).await?})
-    }
-}
-
-
-impl Driver for PostgresDriver {
-    async fn query<'a>(&'a mut self, sql: &'a str) -> Result<QueryResult<'a>, DatabaseError> {
-        let mut raw_stream = sqlx::query(sql)
-            .fetch(&mut self.connection);
-
-        let first = match raw_stream.next().await {
-            Some(Ok(row)) => row,
-            Some(Err(e)) => return Err(Box::new(e)),
-            None => return Ok(QueryResult {
-                headers: vec![],
-                stream: Box::pin(stream::empty()),
-            }),
-        };
-
-        let headers: Vec<String> = first.columns()
-            .iter()
-            .map(|c| c.name().to_string())
-            .collect();
-
-        let first_decoded = decode_pg_row(&first)
-            .map_err(|e| Box::new(e) as DatabaseError)?;
-
-        let stream = stream::once(async move {
-            Ok(first_decoded)
-        }).chain(raw_stream.map(|r| match r {
-                Ok(row) => decode_pg_row(&row).map_err(|e| Box::new(e) as DatabaseError),
-                Err(e) => Err(Box::new(e) as DatabaseError),
-            }));
-
-        Ok(QueryResult {
-            headers,
-            stream: Box::pin(stream),
-        })
+        Ok(Self { connection: PgConnection::connect_with(&options).await? })
     }
 }
 
@@ -94,3 +53,5 @@ fn decode_pg_row(row: &PgRow) -> Result<Vec<CellValue>, sqlx::Error> {
 
     Ok(out)
 }
+
+impl_sqlx_driver!(PostgresDriver, decode_pg_row);

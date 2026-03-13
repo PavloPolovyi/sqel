@@ -1,10 +1,5 @@
-mod cli;
-mod domain;
-mod infra;
-mod ports;
-mod app;
-
 use clap::Parser;
+use sqel::cli;
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
