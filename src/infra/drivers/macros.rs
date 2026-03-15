@@ -5,6 +5,7 @@
 ///   $decode_fn – the row→CellValue function (e.g., decode_pg_row)
 macro_rules! impl_sqlx_driver {
     ($driver:ident, $decode_fn:path) => {
+        #[async_trait::async_trait]
         impl crate::ports::Driver for $driver {
             //    Streams rows one by one, decoding each with $decode_fn.
             //

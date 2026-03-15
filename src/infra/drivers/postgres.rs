@@ -7,17 +7,21 @@ pub struct PostgresDriver {
 }
 
 impl PostgresDriver {
-    pub async fn connect(connection: &Conn, password: &str) -> Result<Self, DatabaseError> {
+    pub async fn connect(connection: &Conn, password: Option<&str>) -> Result<Self, DatabaseError> {
         let (host, port, db, user) = connection
             .kind().as_network().ok_or("expected network connection")?;
 
-        let options = PgConnectOptions::new()
+        let mut options = PgConnectOptions::new()
             .host(host)
             .port(port)
             .username(user)
             .database(db)
-            .password(password)
             .options(connection.params());
+
+        if let Some(password) = password {
+            options = options.password(password);
+        }
+
         Ok(Self { connection: PgConnection::connect_with(&options).await? })
     }
 }

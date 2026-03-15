@@ -1,7 +1,7 @@
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 use std::collections::BTreeMap;
-use std::path::PathBuf;
+use std::path::{PathBuf};
 use serde::{Serialize, Deserialize};
 use crate::domain::DriverType;
 
@@ -53,7 +53,7 @@ pub enum ConnectionNameError {
     TooLong
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum ConnectionKind {
     Network {
         host: String,
@@ -71,6 +71,13 @@ impl ConnectionKind {
         match &self {
             ConnectionKind::Network { host, port, db, user } =>
                 Some((host, *port, db, user)),
+            _ => None
+        }
+    }
+
+    pub fn as_sqlite(&self) -> Option<&PathBuf> {
+        match &self {
+            ConnectionKind::Sqlite { path } => Some(path),
             _ => None
         }
     }
