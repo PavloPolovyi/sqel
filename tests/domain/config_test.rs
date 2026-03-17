@@ -2,9 +2,13 @@ use std::collections::BTreeMap;
 use std::str::FromStr;
 use sqel::domain::*;
 
+fn conn_name(name: &str) -> ConnectionName {
+    ConnectionName::from_str(name).unwrap()
+}
+
 fn make_connection(name: &str) -> Connection {
     Connection::new(
-        ConnectionName::from_str(name).unwrap(),
+        conn_name(name),
         DriverType::Postgres,
         ConnectionKind::Network {
             host: "localhost".into(),
@@ -45,7 +49,7 @@ fn add_duplicate_with_overwrite_succeeds() {
 fn add_with_set_default() {
     let mut config = Config::empty();
     config.add(make_connection("dev"), true, false).unwrap();
-    assert_eq!(config.get_default(), Some("dev".to_string()));
+    assert_eq!(config.get_default(), Some(&conn_name("dev")));
 }
 
 #[test]
@@ -59,7 +63,7 @@ fn add_without_set_default() {
 fn remove_existing_connection() {
     let mut config = Config::empty();
     config.add(make_connection("dev"), false, false).unwrap();
-    let removed = config.remove(&ConnectionName::from_str("dev").unwrap()).unwrap();
+    let removed = config.remove(&conn_name("dev")).unwrap();
     assert_eq!(removed.name().as_str(), "dev");
     assert_eq!(config.list().count(), 0);
 }
@@ -67,7 +71,7 @@ fn remove_existing_connection() {
 #[test]
 fn remove_nonexistent_connection_fails() {
     let mut config = Config::empty();
-    let err = config.remove(&ConnectionName::from_str("nope").unwrap()).unwrap_err();
+    let err = config.remove(&conn_name("nope")).unwrap_err();
     assert!(err.to_string().contains("not found"));
 }
 
@@ -75,7 +79,7 @@ fn remove_nonexistent_connection_fails() {
 fn remove_default_clears_default() {
     let mut config = Config::empty();
     config.add(make_connection("dev"), true, false).unwrap();
-    config.remove(&ConnectionName::from_str("dev").unwrap()).unwrap();
+    config.remove(&conn_name("dev")).unwrap();
     assert_eq!(config.get_default(), None);
 }
 
@@ -84,22 +88,22 @@ fn remove_non_default_preserves_default() {
     let mut config = Config::empty();
     config.add(make_connection("dev"), true, false).unwrap();
     config.add(make_connection("staging"), false, false).unwrap();
-    config.remove(&ConnectionName::from_str("staging").unwrap()).unwrap();
-    assert_eq!(config.get_default(), Some("dev".to_string()));
+    config.remove(&conn_name("staging")).unwrap();
+    assert_eq!(config.get_default(), Some(&conn_name("dev")));
 }
 
 #[test]
 fn get_existing_connection() {
     let mut config = Config::empty();
     config.add(make_connection("dev"), false, false).unwrap();
-    let name = ConnectionName::from_str("dev").unwrap();
+    let name = conn_name("dev");
     assert!(config.get(&name).is_some());
 }
 
 #[test]
 fn get_nonexistent_returns_none() {
     let config = Config::empty();
-    let name = ConnectionName::from_str("nope").unwrap();
+    let name = conn_name("nope");
     assert!(config.get(&name).is_none());
 }
 
@@ -107,14 +111,14 @@ fn get_nonexistent_returns_none() {
 fn set_default_valid_connection() {
     let mut config = Config::empty();
     config.add(make_connection("dev"), false, false).unwrap();
-    config.set_default(&ConnectionName::from_str("dev").unwrap()).unwrap();
-    assert_eq!(config.get_default(), Some("dev".to_string()));
+    config.set_default(&conn_name("dev")).unwrap();
+    assert_eq!(config.get_default(), Some(&conn_name("dev")));
 }
 
 #[test]
 fn set_default_nonexistent_fails() {
     let mut config = Config::empty();
-    let err = config.set_default(&ConnectionName::from_str("nope").unwrap()).unwrap_err();
+    let err = config.set_default(&conn_name("nope")).unwrap_err();
     assert!(err.to_string().contains("not found"));
 }
 
@@ -123,8 +127,8 @@ fn set_default_overrides_previous() {
     let mut config = Config::empty();
     config.add(make_connection("dev"), true, false).unwrap();
     config.add(make_connection("prod"), false, false).unwrap();
-    config.set_default(&ConnectionName::from_str("prod").unwrap()).unwrap();
-    assert_eq!(config.get_default(), Some("prod".to_string()));
+    config.set_default(&conn_name("prod")).unwrap();
+    assert_eq!(config.get_default(), Some(&conn_name("prod")));
 }
 
 #[test]
@@ -132,7 +136,7 @@ fn unset_default_returns_previous() {
     let mut config = Config::empty();
     config.add(make_connection("dev"), true, false).unwrap();
     let prev = config.unset_default();
-    assert_eq!(prev, Some("dev".to_string()));
+    assert_eq!(prev, Some(conn_name("dev")));
     assert_eq!(config.get_default(), None);
 }
 

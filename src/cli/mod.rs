@@ -18,10 +18,10 @@ pub async fn run(cli: Cli) -> anyhow::Result<()> {
 
     match cli.command {
         args::Command::Conn(conn_sub) => match conn_sub.command {
-            ConnectionSubcommand::Add(args) => handlers::handle_add(&console, &conn_app, args),
+            ConnectionSubcommand::Add(args) => handlers::handle_add(&console, &conn_app, args).await,
             ConnectionSubcommand::List(args) => handlers::handle_list(&conn_app, &args),
             ConnectionSubcommand::Remove { name } => handlers::handle_remove(&console, &conn_app, name),
-            ConnectionSubcommand::Test { conn, timeout } => handlers::handle_test(&console, &conn_app, conn.name, timeout),
+            ConnectionSubcommand::Test { conn, timeout } => handlers::handle_test(&console, &conn_app, conn.name, timeout).await,
             ConnectionSubcommand::SetDefault { name } => handlers::handle_set_default(&console, &conn_app, name),
             ConnectionSubcommand::UnsetDefault => handlers::handle_unset_default(&console, &conn_app),
         },

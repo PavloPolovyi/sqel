@@ -6,7 +6,7 @@ use crate::cli::console::{Console};
 use crate::domain::{AuthMode, CellValue, ConnectionKind, ConnectionName, DriverType};
 use crate::cli::output::OutputWriter;
 
-pub fn handle_add(console: &Console, app: &ConnectionService, args: AddConnectionArgs) -> anyhow::Result<()> {
+pub async fn handle_add(console: &Console, app: &ConnectionService, args: AddConnectionArgs) -> anyhow::Result<()> {
     let (resolved_connection, options) = match args.driver {
         DriverSubcommand::Postgres(arg) => {
             (process_network_driver(DriverType::Postgres, &arg.network, &arg.auth, &args.name, console)?, arg.options)
@@ -37,7 +37,10 @@ pub fn handle_add(console: &Console, app: &ConnectionService, args: AddConnectio
         console.warn(&w.to_string())
     }
     if !options.no_test {
-        console.warn("Test is not implemented");
+        if let Err(e) =handle_test(console, app,
+                                   Some(args.name.clone()), options.timeout).await {
+            console.error(&format!("Connection test failed: {}", e));
+        }
     }
     console.success(&format!("Connection '{}' saved.", &args.name));
     Ok(())
@@ -157,13 +160,13 @@ pub fn handle_list(app: &ConnectionService, args: &ListArgs) -> anyhow::Result<(
     let res = app.list()?;
 
     let headers = ["", "NAME", "DRIVER", "LOCATION", "USER", "AUTH", "PARAMS"];
-    let default_name = res.default_connection.as_deref();
+    let default_name = res.default_connection;
 
     let rows: Vec<Vec<CellValue>> = res
         .connections
         .iter()
         .map(|c| {
-            let is_default = default_name == Some(c.name().as_str());
+            let is_default = default_name.as_ref() == Some(c.name());
             let marker = if is_default { "*" } else { "" };
 
             let user: String = match c.kind() {
@@ -206,8 +209,11 @@ pub fn handle_list(app: &ConnectionService, args: &ListArgs) -> anyhow::Result<(
     Ok(())
 }
 
-pub fn handle_test(console: &Console, app: &ConnectionService, name: Option<ConnectionName>, timeout: u64) -> anyhow::Result<()> {
-    todo!()
+pub async fn handle_test(console: &Console, app: &ConnectionService, 
+                   name: Option<ConnectionName>, timeout: u64) -> anyhow::Result<()> {
+    app.test(name, timeout, console).await?;
+    console.success("Connected successfully.");
+    Ok(())
 }
 
 struct ResolvedConnection {

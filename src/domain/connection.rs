@@ -5,7 +5,7 @@ use std::path::{PathBuf};
 use serde::{Serialize, Deserialize};
 use crate::domain::DriverType;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct ConnectionName(String);
 
 impl ConnectionName {

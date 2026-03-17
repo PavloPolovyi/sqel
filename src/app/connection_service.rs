@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
+use std::time::Duration;
 use crate::domain::{AuthMode, Connection, ConnectionKind, ConnectionName, CredentialStorage, DriverType};
-use crate::ports::{ConfigStore, SecretStore};
+use crate::ports::{ConfigStore, CredentialProvider, SecretStore};
 
 pub struct ConnectionService {
     secret_store: Box<dyn SecretStore>,
@@ -57,7 +58,7 @@ impl ConnectionService {
 
     pub fn list(&self) -> anyhow::Result<ListResult> {
         let config = self.config_store.load()?;
-        Ok(ListResult::new(config.get_default(), config.list().cloned().collect()))
+        Ok(ListResult::new(config.get_default().cloned(), config.list().cloned().collect()))
     }
 
     pub fn remove(&self, name: &ConnectionName) -> anyhow::Result<Vec<ConnectionWarning>> {
@@ -80,26 +81,51 @@ impl ConnectionService {
         Ok(())
     }
 
-    pub fn unset_default(&self) -> anyhow::Result<Option<String>> {
+    pub fn unset_default(&self) -> anyhow::Result<Option<ConnectionName>> {
         let mut config = self.config_store.load()?;
         let option = config.unset_default();
         self.config_store.save(&config)?;
         Ok(option)
     }
 
-    pub fn test(&self, name: &ConnectionName, timeout: u64) -> anyhow::Result<()> {
-        todo!()
+    pub async fn test(&self, name: Option<ConnectionName>, timeout: u64,
+                credentials_provider: &dyn CredentialProvider) -> anyhow::Result<()> {
+        let mut driver = self.connect(name, credentials_provider).await?;
+        match tokio::time::timeout(Duration::from_secs(timeout), driver.test()).await {
+            Ok(Ok(_)) => Ok(()),
+            Ok(Err(e)) => Err(anyhow::anyhow!("test failed: {}", e)),
+            Err(_) =>Err(anyhow::anyhow!("timeout testing connection"))
+        }
+    }
+
+    pub async fn connect(&self, name: Option<ConnectionName>, credentials_provider: &dyn CredentialProvider) -> anyhow::Result<Box<dyn crate::ports::Driver>> {
+        let config = self.config_store.load()?;
+        let name = name
+            .or_else(|| config.get_default().cloned())
+            .ok_or_else(|| anyhow::anyhow!("no default connection"))?;
+        let connection = config.get(&name).ok_or_else(|| anyhow::anyhow!("connection not found"))?;
+        let password = match connection.credential_storage() {
+            CredentialStorage::None => None,
+            CredentialStorage::KeyStore => {
+                self.secret_store.get(connection.name().as_str())?
+            }
+            CredentialStorage::Prompt => {
+                Some(credentials_provider.get_secret(&format!("Password for '{}'", name))?)
+            }
+        };
+        crate::infra::drivers::connect(&connection, password).await
+            .map_err(|e| anyhow::anyhow!("failed to connect: {}", e))
     }
 }
 
 #[derive(Debug)]
 pub struct ListResult {
-    pub default_connection: Option<String>,
+    pub default_connection: Option<ConnectionName>,
     pub connections: Vec<Connection>
 }
 
 impl ListResult {
-    pub fn new(default_connection: Option<String>, connections: Vec<Connection>) -> Self {
+    pub fn new(default_connection: Option<ConnectionName>, connections: Vec<Connection>) -> Self {
         ListResult {default_connection, connections}
     }
 }
