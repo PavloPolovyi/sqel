@@ -37,7 +37,7 @@ pub async fn handle_add(console: &Console, app: &ConnectionService, args: AddCon
         console.warn(&w.to_string())
     }
     if !options.no_test {
-        if let Err(e) =handle_test(console, app,
+        if let Err(e) = handle_test(console, app,
                                    Some(args.name.clone()), options.timeout).await {
             console.error(&format!("Connection test failed: {}", e));
         }
@@ -109,9 +109,9 @@ fn process_auth(
 fn process_network_driver(driver: DriverType,
                           args: &NetworkConnectionArgs,
                           auth_command: &Option<AuthSubcommand>, name: &ConnectionName, console: &Console) -> anyhow::Result<ResolvedConnection> {
-    let (kind, mut password) = process_network_args(driver, &args)?;
+    let (kind, mut password) = process_network_args(driver, args)?;
 
-    let (auth_mode, resolved_password) = process_auth(&auth_command, password.is_some(), name, console)?;
+    let (auth_mode, resolved_password) = process_auth(auth_command, password.is_some(), name, console)?;
     password = password.or(resolved_password);
 
     Ok(ResolvedConnection {driver, kind, auth_mode, password})
@@ -124,13 +124,8 @@ fn read_password_stdin() -> anyhow::Result<String> {
 }
 
 fn read_password_env(var: &str) -> anyhow::Result<String> {
-    match std::env::var(var) {
-        Ok(p) => Ok(p),
-        Err(e) => {
-            Err(e).with_context(|| format!("Failed to read password from env variable '{}'",
-                                           var))
-        }
-    }
+    std::env::var(var)
+        .with_context(|| format!("Failed to read password from env variable '{}'", var))
 }
 
 pub fn handle_remove(console: &Console, app: &ConnectionService, name: ConnectionName) -> anyhow::Result<()> {
@@ -176,7 +171,7 @@ pub fn handle_list(app: &ConnectionService, args: &ListArgs) -> anyhow::Result<(
 
             let auth: String = match c.auth() {
                 AuthMode::None => "none".into(),
-                AuthMode::Password => format!("password ({})", c.credential_storage()).into(), // owned
+                AuthMode::Password => format!("password ({})", c.credential_storage()),
             };
 
             let mut params: String = c.params().iter()

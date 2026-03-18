@@ -63,10 +63,6 @@ macro_rules! impl_sqlx_driver {
                     .await?;
                 Ok(result.rows_affected())
             }
-
-            async fn test(&mut self) -> Result<(), crate::domain::DatabaseError> {
-                Ok(self.connection.ping().await?)
-            }
         }
     };
 }

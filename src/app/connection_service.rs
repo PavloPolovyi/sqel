@@ -90,11 +90,10 @@ impl ConnectionService {
 
     pub async fn test(&self, name: Option<ConnectionName>, timeout: u64,
                 credentials_provider: &dyn CredentialProvider) -> anyhow::Result<()> {
-        let mut driver = self.connect(name, credentials_provider).await?;
-        match tokio::time::timeout(Duration::from_secs(timeout), driver.test()).await {
+        match tokio::time::timeout(Duration::from_secs(timeout), self.connect(name, credentials_provider)).await {
             Ok(Ok(_)) => Ok(()),
             Ok(Err(e)) => Err(anyhow::anyhow!("test failed: {}", e)),
-            Err(_) =>Err(anyhow::anyhow!("timeout testing connection"))
+            Err(_) => Err(anyhow::anyhow!("timeout testing connection"))
         }
     }
 
@@ -107,7 +106,8 @@ impl ConnectionService {
         let password = match connection.credential_storage() {
             CredentialStorage::None => None,
             CredentialStorage::KeyStore => {
-                self.secret_store.get(connection.name().as_str())?
+                Some(self.secret_store.get(connection.name().as_str())?
+                    .ok_or_else(|| anyhow::anyhow!("password not found in keystore"))?)
             }
             CredentialStorage::Prompt => {
                 Some(credentials_provider.get_secret(&format!("Password for '{}'", name))?)
