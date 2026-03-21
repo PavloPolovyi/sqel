@@ -18,13 +18,16 @@ toml = "1.0.3"
 url = "2.5.8"
 thiserror = "2.0.18"
 rpassword = "7.4.0"
-comfy-table = "=7.2.2"
 csv = "1.4.0"
 serde_json = "1.0.149"
 base64 = "0.22.1"
 tokio = { version = "1.50.0", features = ["rt", "macros"] }
 sqlx = { version = "0.8.6", features = ["runtime-tokio", "tls-rustls", "postgres", "mysql",
-    "sqlite", "json", "uuid", "chrono"] }
+    "sqlite", "json", "uuid", "chrono", "rust_decimal", "ipnetwork", "mac_address"] }
+rust_decimal = { version = "1", features = ["serde-with-float"] }
+ipnetwork = "0.20"
+mac_address = "1"
 futures = "0.3.32"
 uuid = { version = "1", features = ["v4"] }
 chrono = "0.4"
+tablestream = "0.1.4"

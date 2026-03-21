@@ -1,5 +1,6 @@
 use clap::{Parser, Subcommand};
 use crate::cli::connection::ConnectionCommand;
+use crate::cli::query::QueryCommand;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -20,4 +21,6 @@ pub struct Cli {
 pub enum Command {
     /// Manage saved database connections
     Conn(ConnectionCommand),
+    /// Execute query
+    Query(QueryCommand)
 }

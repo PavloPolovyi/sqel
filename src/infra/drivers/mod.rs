@@ -1,4 +1,4 @@
-use crate::domain::{AuthMode, Connection, DatabaseError, DriverType};
+use crate::domain::{AuthMode, Connection, DriverType};
 use crate::infra::drivers::mysql::MySqlDriver;
 use crate::infra::drivers::postgres::PostgresDriver;
 use crate::infra::drivers::sqlite::SqliteDriver;
@@ -10,10 +10,10 @@ mod postgres;
 mod mysql;
 mod sqlite;
 
-pub async fn connect(connection: &Connection, password: Option<String>) -> Result<Box<dyn Driver>, DatabaseError> {
+pub async fn connect(connection: &Connection, password: Option<String>) -> Result<Box<dyn Driver>, anyhow::Error> {
     match (connection.auth(), &password) {
-        (AuthMode::Password, None) => return Err(DatabaseError::from("password required")),
-        (AuthMode::None, Some(_)) => return Err(DatabaseError::from("password provided but auth mode is none")),
+        (AuthMode::Password, None) => return Err(anyhow::anyhow!("password required")),
+        (AuthMode::None, Some(_)) => return Err(anyhow::anyhow!("password provided but auth mode is none")),
         _ => {}
     }
 

@@ -3,7 +3,7 @@ use crate::app::{AddConnectionRequest, ConnectionService};
 use crate::cli::output::OutputFormat;
 use crate::cli::connection::{AddConnectionArgs, DriverSubcommand, AuthMethod, AuthSubcommand, ListArgs, NetworkConnectionArgs, DatabaseUrl};
 use crate::cli::console::{Console};
-use crate::domain::{AuthMode, CellValue, ConnectionKind, ConnectionName, DriverType};
+use crate::domain::{AuthMode, CellValue, ConnectionKind, ConnectionName, DriverType, QueryResult};
 use crate::cli::output::OutputWriter;
 
 pub async fn handle_add(console: &Console, app: &ConnectionService, args: AddConnectionArgs) -> anyhow::Result<()> {
@@ -151,10 +151,12 @@ pub fn handle_unset_default(console: &Console, app: &ConnectionService) -> anyho
     Ok(())
 }
 
-pub fn handle_list(app: &ConnectionService, args: &ListArgs) -> anyhow::Result<()> {
+pub async fn handle_list(app: &ConnectionService, args: &ListArgs) -> anyhow::Result<()> {
     let res = app.list()?;
 
-    let headers = ["", "NAME", "DRIVER", "LOCATION", "USER", "AUTH", "PARAMS"];
+    let headers = vec!["".to_owned(), "NAME".to_owned(), "DRIVER".to_owned(), 
+                       "LOCATION".to_owned(), "USER".to_owned(), "AUTH".to_owned(), 
+                       "PARAMS".to_owned()];
     let default_name = res.default_connection;
 
     let rows: Vec<Vec<CellValue>> = res
@@ -198,9 +200,10 @@ pub fn handle_list(app: &ConnectionService, args: &ListArgs) -> anyhow::Result<(
         args.output.output.unwrap_or(OutputFormat::Table),
         args.output.out.clone(),
         args.output.no_headers,
+        args.output.no_pager
     );
 
-    writer.write_table(&headers, &rows)?;
+    writer.write(QueryResult::from_rows(headers, rows)).await?;
     Ok(())
 }
 

@@ -19,7 +19,7 @@ macro_rules! impl_sqlx_driver {
                 sql: &'a str,
             ) -> Result<
                 crate::domain::QueryResult<'a>,
-                crate::domain::DatabaseError,
+                anyhow::Error,
             > {
                 use futures::{stream, StreamExt};
                 use sqlx::Column;
@@ -29,7 +29,7 @@ macro_rules! impl_sqlx_driver {
 
                 let first = match raw_stream.next().await {
                     Some(Ok(row)) => row,
-                    Some(Err(e)) => return Err(Box::new(e)),
+                    Some(Err(e)) => return Err(Box::new(e).into()),
                     None => return Ok(crate::domain::QueryResult {
                         headers: vec![],
                         stream: Box::pin(stream::empty()),
@@ -42,13 +42,13 @@ macro_rules! impl_sqlx_driver {
                     .collect();
 
                 let first_decoded = $decode_fn(&first)
-                    .map_err(|e| Box::new(e) as crate::domain::DatabaseError)?;
+                    .map_err(|e| anyhow::anyhow!(e))?;
 
                 let stream = stream::once(async move {
                     Ok(first_decoded)
                 }).chain(raw_stream.map(|r| match r {
-                    Ok(row) => $decode_fn(&row).map_err(|e| Box::new(e) as crate::domain::DatabaseError),
-                    Err(e) => Err(Box::new(e) as crate::domain::DatabaseError),
+                    Ok(row) => $decode_fn(&row).map_err(|e| anyhow::anyhow!(e)),
+                    Err(e) => Err(anyhow::anyhow!(e)),
                 }));
 
                 Ok(crate::domain::QueryResult {
@@ -57,7 +57,7 @@ macro_rules! impl_sqlx_driver {
                 })
             }
 
-            async fn execute(&mut self, sql: &str, ) -> Result<u64, crate::domain::DatabaseError> {
+            async fn execute(&mut self, sql: &str, ) -> Result<u64, anyhow::Error> {
                 let result = sqlx::query(sql)
                     .execute(&mut self.connection)
                     .await?;

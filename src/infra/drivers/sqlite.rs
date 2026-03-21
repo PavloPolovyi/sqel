@@ -1,16 +1,16 @@
 use std::time::Duration;
 use sqlx::sqlite::{SqliteConnectOptions, SqliteRow};
 use sqlx::{Column, Connection, Row, SqliteConnection, TypeInfo, ValueRef};
-use crate::domain::{CellValue, Connection as Conn, DatabaseError};
+use crate::domain::{CellValue, Connection as Conn};
 
 pub struct SqliteDriver {
     connection: SqliteConnection
 }
 
 impl SqliteDriver {
-    pub async fn connect(connection: &Conn) -> Result<Self, DatabaseError> {
+    pub async fn connect(connection: &Conn) -> Result<Self, anyhow::Error> {
         let path = connection.kind().as_sqlite()
-            .ok_or("expected sqlite connection")?;
+            .ok_or(anyhow::anyhow!("expected sqlite connection"))?;
 
         let mut options = SqliteConnectOptions::new()
             .filename(path);
@@ -23,7 +23,7 @@ impl SqliteDriver {
                 "create_if_missing" => options.create_if_missing(value.parse()?),
                 "foreign_keys" => options.foreign_keys(value.parse()?),
                 k if k.starts_with("pragma.") => options.pragma(k["pragma.".len()..].to_owned(), value.to_owned()),
-                _ => return Err(DatabaseError::from(format!("unsupported sqlite parameter: {}", key)))
+                _ => return Err(anyhow::anyhow!("unsupported sqlite parameter: {}", key))
             }
         }
 
