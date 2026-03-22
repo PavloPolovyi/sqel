@@ -43,10 +43,20 @@ fn decode_sqlite_row(row: &SqliteRow) -> Result<Vec<CellValue>, sqlx::Error> {
                 "INTEGER"  => CellValue::Int(row.try_get::<i64, _>(i)?),
                 "REAL"     => CellValue::Float(row.try_get::<f64, _>(i)?),
                 "BLOB"     => CellValue::Bytes(row.try_get::<Vec<u8>, _>(i)?),
-                "DATETIME" => CellValue::Text(row.try_get::<chrono::NaiveDateTime, _>(i)?.to_string()),
+                "DATETIME" => CellValue::Text(
+                    row.try_get::<chrono::NaiveDateTime, _>(i)
+                        .map(|dt| dt.to_string())
+                        .or_else(|_| row.try_get::<chrono::NaiveDate, _>(i).map(|d| d.to_string()))
+                        .or_else(|_| row.try_get::<String, _>(i))?
+                ),
                 "DATE"     => CellValue::Text(row.try_get::<chrono::NaiveDate, _>(i)?.to_string()),
                 "TIME"     => CellValue::Text(row.try_get::<chrono::NaiveTime, _>(i)?.to_string()),
-                _          => CellValue::Text(row.try_get::<String, _>(i)?),
+                _ => match value_ref.type_info().name() {
+                    "INTEGER" => CellValue::Int(row.try_get::<i64, _>(i)?),
+                    "REAL"    => CellValue::Float(row.try_get::<f64, _>(i)?),
+                    "BLOB"    => CellValue::Bytes(row.try_get::<Vec<u8>, _>(i)?),
+                    _         => CellValue::Text(row.try_get::<String, _>(i)?),
+                },
             }
         };
         out.push(value);
